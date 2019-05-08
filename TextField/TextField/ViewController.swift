@@ -14,9 +14,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var txtField:    UITextField!
     @IBOutlet weak var maximumNoLabel: UILabel!
     
-    let customArray = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0"]
-    
-    let maximumNumber: Float = 2500.00
+    let maximumNumber: Float = 99999.00
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,6 +29,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
 
     func textFieldDidEndEditing(_ textField: UITextField) {
+        
+        addCommaToTextField()
         
         errorLabel.text = "End"
         
@@ -48,8 +48,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
-        print("Begin")
-        errorLabel.text = "Begin"
+        addCommaToTextField()
         return true
     }
     
@@ -57,66 +56,99 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
         errorLabel.text = "Changing"
         
+        removeCommaFromTextField()
+        
         // Case for backspace
         if let char = string.cString(using: String.Encoding.utf8) {
             let isBackSpace = strcmp(char, "\\b")
             if (isBackSpace == -92) {
                 print("Backspace was pressed.")
+                addCommaToTextField()
                 return true
             }
         }
         
         guard let text = textField.text else {
-            return true
+            addCommaToTextField()
+            return false
+        }
+        
+        // Check for multiple dots
+        var dotCount = 0
+        for char in text {
+            if char == "." {
+                dotCount += 1
+            }
+        }
+        
+        if dotCount == 1 && string == "." {
+            addCommaToTextField()
+            return false
         }
         
         let textToFloatDigit = Int(Float(text) ?? 0).digitCount
         // Check for maximum count
         if  textToFloatDigit == Int(maximumNumber).digitCount && string != "." && !text.contains(".") {
             errorLabel.text = "Only \(Int(maximumNumber).digitCount) digits before ."
+            addCommaToTextField()
             return false
         }
         
         // Check for value after . must be 2 digits only
-        if text.contains(".") && customArray.contains(string) {
+        if text.contains(".") {
             
             let numberOfDecimalDigits: Int
+            
             if let dotIndex = text.firstIndex(of: ".") {
                 numberOfDecimalDigits = text.distance(from: dotIndex, to: text.endIndex) - 1
             } else {
                 numberOfDecimalDigits = 0
             }
             
-            if numberOfDecimalDigits <= 1 {
-                return true
-            } else {
+            if numberOfDecimalDigits > 1 {
                 print("Only two digits after .")
                 errorLabel.text = "Only two digits after ."
+                addCommaToTextField()
                 return false
             }
+            
         }
-        
         
         // Check for first digit i.e 0 or .
         if textField.text?.count == 0 && (string == "0" || string == ".") {
             errorLabel.text = "First place cannot be . or 0."
+            addCommaToTextField()
             return false
         }
+ 
+        addCommaToTextField()
         
-        // Case for only numbers
-        if customArray.contains(string) {
-            return true
-        } else {
-            print("Not Allowed")
-            errorLabel.text = "Only number & . allowed."
-            return false
-        }
+        return true
+    
     }
 
     
     @objc func hideKeyboard() {
         view.endEditing(true)
     }
+    
+    func addCommaToTextField() {
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            
+            guard let floatValue = Float(self.txtField.text ?? "") else { return }
+            let largeNumber = floatValue
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle = .decimal
+            let formattedNumber = numberFormatter.string(from: NSNumber(value:largeNumber))
+            self.txtField.text = formattedNumber
+        }
+    }
+    
+    func removeCommaFromTextField() {
+        txtField.text = txtField.text?.replacingOccurrences(of: ",", with: "", options: String.CompareOptions.literal, range: nil)
+    }
+
     
 }
 
