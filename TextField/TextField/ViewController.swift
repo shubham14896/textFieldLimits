@@ -26,11 +26,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(hideKeyboard))
         view.addGestureRecognizer(tapGesture)
         maximumNoLabel.text = "Maximum Number : \(maximumNumber)"
+        errorLabel.isHidden = true
+        txtField.text = "0"
     }
 
     func textFieldDidEndEditing(_ textField: UITextField) {
-        
-        addCommaToTextField()
         
         errorLabel.text = "End"
         
@@ -48,7 +48,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
-        addCommaToTextField()
+        
+        textField.text = ""
+        
         return true
     }
     
@@ -136,12 +138,25 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             
-            guard let floatValue = Float(self.txtField.text ?? "") else { return }
-            let largeNumber = floatValue
-            let numberFormatter = NumberFormatter()
-            numberFormatter.numberStyle = .decimal
-            let formattedNumber = numberFormatter.string(from: NSNumber(value:largeNumber))
-            self.txtField.text = formattedNumber
+            guard let text = self.txtField.text else { return }
+            
+            let chunkedString = text.components(separatedBy: ".")
+            
+            if chunkedString.count >= 1 {
+                let intValue = Int(chunkedString[0])
+                let numberFormatter = NumberFormatter()
+                numberFormatter.numberStyle = .decimal
+                let formattedNumber = numberFormatter.string(from: NSNumber(value:intValue ?? 0))
+                self.txtField.text = formattedNumber
+            }
+            
+            if chunkedString.count == 2 {
+                
+                guard let text = self.txtField.text else { return }
+                
+                self.txtField.text = "\(text)" + ".\(chunkedString[1])"
+            }
+            
         }
     }
     
